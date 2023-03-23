@@ -1,0 +1,123 @@
+\documentclass[12pt]{article} % use larger type; default would be 10pt
+
+\linespread{1.25}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tabu}
+\usepackage{epstopdf}
+\usepackage{rotating}
+\usepackage{pdflscape}
+\usepackage{setspace}
+\usepackage[toc,page]{appendix}
+\usepackage[round]{natbib}
+\usepackage{booktabs}   % for nice tables
+\usepackage{kpfonts}    % for nice fonts
+\usepackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage{listings}   % for inserting code
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{subcaption}
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\usepackage{caption}
+\usepackage{float}
+\usepackage{color}  
+\usepackage[colorlinks=true]{hyperref}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{ragged2e}
+
+% maths
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{tikz}
+\newcommand{\Mypm}{\mathbin{\tikz [x=1.4ex,y=1.4ex,line width=.1ex] \draw (0.0,0) -- (1.0,0) (0.5,0.08) -- (0.5,0.92) (0.0,0.5) -- (1.0,0.5);}}
+\newcommand{\R}{\mathbb{R}} 
+\renewcommand{\headrulewidth}{0pt} 
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+\DeclareMathOperator*{\argmax}{arg \, max}
+\DeclareMathOperator*{\argmin}{arg \, min}
+\DeclareMathOperator*{\var}{var}
+\DeclareMathOperator*{\cov}{cov}
+
+\theoremstyle{plain}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+
+\theoremstyle{definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{dfn}{Definition}
+
+\graphicspath{{figures/}}
+
+\usepackage{cleveref} % for clever ref 
+\usepackage{array}    % for better arrays (eg matrices) in maths
+\usepackage{datetime2}
+\usepackage{qtree}
+
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks   = true,
+	citecolor    = blue,
+	urlcolor 	 = blue,
+	linkcolor    = black 
+}
+
+%%% SECTION TITLE APPEARANCE
+\usepackage{sectsty}
+\allsectionsfont{\sffamily\mdseries\upshape} % (See the fntguide.pdf for font help)
+\usepackage[nottoc,notlof,notlot]{tocbibind} % Put the bibliography in the ToC
+\usepackage[titles,subfigure]{tocloft} % Alter the style of the Table of Contents
+\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
+
+\author{ \textsc{Jonathan Créchet}\thanks{Department of Economics, University of Ottawa; jcrechet@uottawa.ca.} }
+
+\title{Heterogeneity in labor mobility and unemployment flows across countries -- Tables}
+
+\date{March 2023}
+
+\begin{document}
+	
+	\maketitle
+	
+	\noindent \textbf{JEL: } E24, J60.
+	
+	\noindent \textbf{Keywords: } Unemployment, worker flows, search frictions, heterogeneity, labor-market institutions, firing costs.
+	
+	\newpage
+	
+	\input{Tables/Table_1.tex}
+	
+	\input{Tables/Table_2.tex}
+	
+	\input{Tables/Table_3.tex}
+	
+	\input{Tables/Table_4.tex}
+	
+	\input{Tables/Table_5.tex}
+	
+	\input{Tables/Table_6.tex}
+	
+	\input{Tables/Table_7.tex}
+	
+\end{document}
+
+
+
+
+
+
