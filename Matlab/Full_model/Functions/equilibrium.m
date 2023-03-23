@@ -3,8 +3,8 @@ function [distance, moments, variable_struct, timer_struct] = equilibrium(x, par
 
 % Function name: equilibrium.m
 % Project: Heterogeneity in labor mobility and unemployment flows across countries
-% Créchet, 2022
-% created 2020 - last updated January 2022
+% Créchet, 2023
+% created 2020 - last updated March 2023
 
 % Compute a numerical equilibrium solution
 
@@ -18,7 +18,7 @@ function [distance, moments, variable_struct, timer_struct] = equilibrium(x, par
 
 % OUT:
 
-% distance: measure of a distance (a mmetric value) between targeted empirical and computed moments.
+% distance: measure of a distance (a metric value) between targeted empirical and computed moments.
 % moments: computed moments
 % variable_struct: structure containing model's equilibrium variables 
 % (value functions, LM tightness, conditional transition rates, etc)
