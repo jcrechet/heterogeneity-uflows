@@ -1,0 +1,521 @@
+------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Acc
+> epted2023\Replication_files\Stata\Log/3_cross-country.log
+  log type:  text
+ opened on:  19 Mar 2023, 11:22:09
+
+. 
+. **
+. **
+. 
+. ** Construct dataset using OECD raw data
+. 
+. **
+. **
+. 
+. * LFS data (unemployment)
+. import delimited Raw_data/LFS.csv, clear
+(21 vars, 575,981 obs)
+
+. 
+. * rename variable names (for consistency with other data files)
+. rename ï ctry
+
+. rename time year
+
+. 
+. * keep population and variables of interest
+. keep if age == 900000 // age: 15 to 64
+(551,561 observations deleted)
+
+. keep if sex == "MW" // men and women
+(16,280 observations deleted)
+
+. keep ctry country year series value //variables of interest
+
+. keep if series == "U" | series == "E"
+(4,070 observations deleted)
+
+. 
+. * reshape data (wide)
+. reshape wide value, i(ctry country year) j(series) string
+(note: j = E U)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                     4070   ->    2035
+Number of variables                   5   ->       5
+j variable (2 values)            series   ->   (dropped)
+xij variables:
+                                  value   ->   valueE valueU
+-----------------------------------------------------------------------------
+
+. 
+. * rename variables of interest
+. rename valueE E 
+
+. rename valueU U
+
+. 
+. * save temporary dta file
+. save tmp, replace
+file tmp.dta saved
+
+. 
+. **
+. **
+. 
+. ** Unemployment by duration
+. import delimited Raw_data/unemployment_by_duration.csv, clear
+(21 vars, 238,255 obs)
+
+. 
+. * renaming key data
+. rename ï ctry
+
+. rename time year
+
+. 
+. * population
+. keep if sex == "MW" // men and women
+(157,750 observations deleted)
+
+. keep if age == 900000 // all ages
+(67,906 observations deleted)
+
+. 
+. * variables
+. keep ctry country year duration value //variables of interest
+
+. 
+. * duration less than one month
+. keep if duration == "UN1"
+(10,990 observations deleted)
+
+. 
+. * cleanup
+. drop duration
+
+. rename value u_short_term
+
+. 
+. * merging data
+. merge 1:1 ctry year using tmp
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                           428
+        from master                         1  (_merge==1)
+        from using                        427  (_merge==2)
+
+    matched                             1,608  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. save tmp, replace
+file tmp.dta saved
+
+. 
+. **
+. **
+. 
+. ** Elsby, Hobijn, Sahin (2013) flows
+. 
+. * country codes
+. use tmp, clear
+
+. keep country ctry
+
+. duplicates drop 
+
+Duplicates in terms of all variables
+
+(1,977 observations deleted)
+
+. save Dta/ctry_codes.dta, replace
+file Dta/ctry_codes.dta saved
+
+. 
+. * import excel file
+. import excel Raw_data\UnemploymentDynamicsInTheOECD.xlsm, sheet("Calculations") cellrange(A3:IV717) firstr
+> ow clear
+
+. 
+. * variables
+. keep country year u f s
+
+. 
+. * country codes
+. merge m:m country using Dta/ctry_codes.dta
+(note: variable country was str14, now str18 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                            42
+        from master                         0  (_merge==1)
+        from using                         42  (_merge==2)
+
+    matched                               714  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. * merge data with master file
+. drop if year == .
+(42 observations deleted)
+
+. merge 1:1 ctry year using tmp
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         1,572
+        from master                       125  (_merge==1)
+        from using                      1,447  (_merge==2)
+
+    matched                               589  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. order country ctry year
+
+. 
+. * Labels
+. lab var f "U outflows -- Elsby et al. (2013)"
+
+. lab var s "U inflows -- Elsby et al. (2013)"
+
+. 
+. * Monthly transition probabilities
+. gen ue_ehs = 1-exp(-f)
+(1,744 missing values generated)
+
+. gen eu_ehs = 1-exp(-s)
+(1,744 missing values generated)
+
+. 
+. save tmp, replace
+file tmp.dta saved
+
+. 
+. **
+. **
+. 
+. * Taxes
+. import delimited Raw_data\tax_wages.csv, clear
+(17 vars, 90,560 obs)
+
+. rename cou ctry
+
+. 
+. * employee and employer's social security
+. keep if ïindicator == "2_2" | ïindicator == "2_3"
+(78,400 observations deleted)
+
+. 
+. * single, 100% of average earnings, no child
+. keep if fam_type == "SINGLE2" 
+(10,640 observations deleted)
+
+. 
+. * cleanup
+. keep ctry country year ïindicator value  
+
+. rename ïindicator series
+
+. reshape wide value, i(ctry country year) j(series) string
+(note: j = 2_2 2_3)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                     1520   ->     760
+Number of variables                   5   ->       5
+j variable (2 values)            series   ->   (dropped)
+xij variables:
+                                  value   ->   value2_2 value2_3
+-----------------------------------------------------------------------------
+
+. 
+. * cleanup
+. rename value2_2 ssc_employee
+
+. rename value2_3 ssc_employer
+
+. 
+. * merge data
+. drop if year == .
+(0 observations deleted)
+
+. merge 1:1 ctry year using tmp
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         1,481
+        from master                        40  (_merge==1)
+        from using                      1,441  (_merge==2)
+
+    matched                               720  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. * order variables and sort by country, year
+. order country ctry year
+
+. save tmp, replace
+file tmp.dta saved
+
+. 
+. **
+. **
+. 
+. * Unemployment benefits
+. 
+. * UB (net) replacement ratio
+. import delimited Raw_data\Net_replacement_rate_ub.csv, clear
+(17 vars, 532,320 obs)
+
+. rename ï ctry
+
+. keep ctry country year family duration earnings value includesocialassistancebenefits satopups hbtopups in
+> cludehousingbenefits
+
+. 
+. * single
+. keep if family == "SINGLE"
+(0 observations deleted)
+
+. 
+. * Average earnings
+. keep if earnings == "AW"
+(338,880 observations deleted)
+
+. 
+. * duration less than six months
+. keep if duration >=0 & duration <= 6
+(174,096 observations deleted)
+
+. 
+. * no social assistance/housing benef
+. keep if includesocialassistancebenefits == "No"
+(9,672 observations deleted)
+
+. keep if includehousingbenefits == "No"
+(4,836 observations deleted)
+
+. 
+. * satopups, hbtopups??
+. keep if satopups == 0
+(0 observations deleted)
+
+. keep if hbtopups == 0
+(0 observations deleted)
+
+. 
+. * cleanup
+. drop family earnings include* sato hbto
+
+. order ctry country year duration value
+
+. sort ctry country year duration value
+
+. rename value uemployment_benefits
+
+. 
+. * one year average over fduration
+. collapse uemployment_benefits, by(ctry country year)
+
+. 
+. * merge data with master file
+. drop if year == .
+(0 observations deleted)
+
+. merge 1:1 ctry year using tmp
+(note: variable country was str15, now str33 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         1,613
+        from master                       109  (_merge==1)
+        from using                      1,504  (_merge==2)
+
+    matched                               697  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. * order variables and sort by country, year
+. order country ctry year
+
+. save tmp, replace
+file tmp.dta saved
+
+. 
+. **
+. **
+. 
+. * Employment Protection Legislation (EPL) index
+. 
+. * regular, individual
+. import delimited Raw_data\EPL_individual_regular.csv, clear
+(15 vars, 1,873 obs)
+
+. 
+. * EPL v1
+. keep if series == "EPR_V1"
+(769 observations deleted)
+
+. 
+. * cleanup
+. rename ï ctry
+
+. rename time year
+
+. keep ctry country year value  
+
+. rename value EPR_V1
+
+. 
+. * merge with master file
+. merge 1:1 ctry year using tmp
+(note: variable country was str22, now str33 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         1,310
+        from master                        52  (_merge==1)
+        from using                      1,258  (_merge==2)
+
+    matched                             1,052  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. save tmp, replace
+file tmp.dta saved
+
+. 
+. 
+. ***
+. ***
+. 
+. * Figure 3: EPL index vs Elsby et al. (2013) probabilities
+. preserve
+
+. 
+. keep if ue_ehs!=. & eu_ehs!=. & EPR_V1 != . 
+(2,024 observations deleted)
+
+. keep if year >= 1985 & year <= 2009
+(0 observations deleted)
+
+. 
+. * collapse
+. collapse ue_ehs eu_ehs EPR_V1, by(ctry)
+
+. 
+. * transition rates in log deviation from the US
+. egen ue_US = max(ue_ehs)
+
+. egen eu_US = max(eu_ehs)
+
+. 
+. gen ue_rel = log(ue_ehs) - log(ue_US)
+
+. gen eu_rel = log(eu_ehs) - log(eu_US)
+
+. 
+. * Scatter plot: unemployment outflows vs EPL
+. scatter ue_rel EPR_V1, mlabel(ctry) || lfit ue_rel EPR_V1 || ///
+> lfit ue_rel EPR_V1 if ctry != "PRT" & ctry != "IRL" & ctry != "NOR" & ctry != "SWE", ///
+> ytitle("UE rate (rel. to the U.S.)") xtitle("EPL index") legend(off) graphregion(color(white))
+
+. graph export "$results_path\Figures\Figure_3a.eps", as(eps) replace
+(file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted20
+> 23\Replication_files\_Results\Figures\Figure_3a.eps written in EPS format)
+
+. graph export "$results_path\Figures\Figure_3a.png", as(png) replace
+(file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted20
+> 23\Replication_files\_Results\Figures\Figure_3a.png written in PNG format)
+
+. 
+. * Scatter plot: unemployment inflows vs EPL
+. scatter eu_rel EPR_V1, mlabel(ctry) || lfit eu_rel EPR_V1 || ///
+> lfit eu_rel EPR_V1 if ctry != "PRT" & ctry != "IRL" & ctry != "NOR" & ctry != "SWE", ///
+> ytitle("EU rate (rel. to the U.S.)") xtitle("EPL index") legend(off) graphregion(color(white))
+
+. graph export "$results_path\Figures\Figure_3b.eps", as(eps) replace
+(file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted20
+> 23\Replication_files\_Results\Figures\Figure_3b.eps written in EPS format)
+
+. graph export "$results_path\Figures\Figure_3b.png", as(png) replace
+(file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted20
+> 23\Replication_files\_Results\Figures\Figure_3b.png written in PNG format)
+
+. 
+. restore
+
+. 
+. ***
+. ***
+. 
+. ** Data for calibration
+. 
+. * UE and EU rates based on Rogerson, Shimer (2011)
+. gen ue = u_short_term/U
+(754 missing values generated)
+
+. gen eu = 1-(1-ue)^(U/E)
+(754 missing values generated)
+
+. 
+. * sample
+. keep if year >= 1995 & year <= 2018
+(1,001 observations deleted)
+
+. keep if ctry == "DEU" | ctry == "ESP" | ctry == "FRA" | ctry == "ITA" | ctry == "PRT" | ctry == "USA"
+(1,217 observations deleted)
+
+. 
+. * mean 
+. collapse ue eu uemployment_benefits ssc_employee ssc_employer, by( country ctry )
+
+. 
+. * export to Matlab
+. export delimited using "$Matlab_directory\Data\cross_country_data.csv", replace
+file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted202
+> 3\Replication_files\Matlab\Data\cross_country_data.csv saved
+
+. 
+. * erase temporary datafile
+. erase tmp.dta
+
+. 
+. **
+. 
+. ** References
+. 
+. * Elsby, Michael WL, Bart Hobijn, and Ayşegül Şahin. 
+. * "Unemployment Dynamics in the OECD." Review of Economics and Statistics 95, no. 2 (2013): 530-548.
+. 
+. * Rogerson, Richard, and Robert Shimer. 
+. * "Search in macroeconomic models of the labor market." In Handbook of labor economics, vol. 4, pp. 619-70
+> 0. Elsevier, 2011.
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+end of do-file
+
+. 
+end of do-file
+
+. exit, clear

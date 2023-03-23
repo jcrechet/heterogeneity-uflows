@@ -1,0 +1,2305 @@
+------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Acc
+> epted2023\Replication_files\Stata\Log\1_worker_flows.log
+  log type:  text
+ opened on:  19 Mar 2023, 11:11:16
+
+. 
+. * data
+. use "$working_dir\Dta\CPS_data", clear
+
+. 
+. * variables
+. drop earnwt earnweek hourwage paidhour uhrswork1 ahrswork1 classwkr 
+
+. 
+. ***
+. ***
+. 
+. * 1. PANEL PREPARATION
+. 
+. * date
+. gen year_str = string(year)
+
+. gen month_str = string(month)
+
+. gen date_str = year_str + "m" + month_str
+
+. gen date = monthly( date_str, "YM" )
+
+. drop *_str
+
+. 
+. * declare panel
+. xtset cpsidp date, monthly
+       panel variable:  cpsidp (unbalanced)
+        time variable:  date, 1995m9 to 2018m12, but with gaps
+                delta:  1 month
+
+. order cpsidp date
+
+. sort cpsidp date
+
+. 
+. 
+. * sample of individuals in itw month two, three, four, six, seven, eight with available 
+. * info in previous month (and that can be longitudinally matched based on cpsidp)
+. gen n = .
+(24,287,558 missing values generated)
+
+. 
+. foreach i of numlist 2 3 4 6 7 8 {
+  2. replace n = 0 if mish==`i'
+  3. replace n = 1 if mish==`i' & L.empstat!=.
+  4. }
+(3,056,009 real changes made)
+(2,801,453 real changes made)
+(3,061,478 real changes made)
+(2,883,862 real changes made)
+(3,057,524 real changes made)
+(2,896,142 real changes made)
+(3,038,686 real changes made)
+(2,819,061 real changes made)
+(3,047,539 real changes made)
+(2,877,548 real changes made)
+(3,064,422 real changes made)
+(2,904,452 real changes made)
+
+. 
+. * show number of longitudinally matched id by month in sample
+. foreach i of numlist 2 3 4 6 7 8 {
+  2. 
+. disp " "
+  3. disp "month in sample:" `i'
+  4. tab n if mish == `i', miss
+  5. 
+. }
+ 
+month in sample:2
+
+          n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    254,556        8.33        8.33
+          1 |  2,801,453       91.67      100.00
+------------+-----------------------------------
+      Total |  3,056,009      100.00
+ 
+month in sample:3
+
+          n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    177,616        5.80        5.80
+          1 |  2,883,862       94.20      100.00
+------------+-----------------------------------
+      Total |  3,061,478      100.00
+ 
+month in sample:4
+
+          n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    161,382        5.28        5.28
+          1 |  2,896,142       94.72      100.00
+------------+-----------------------------------
+      Total |  3,057,524      100.00
+ 
+month in sample:6
+
+          n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    219,625        7.23        7.23
+          1 |  2,819,061       92.77      100.00
+------------+-----------------------------------
+      Total |  3,038,686      100.00
+ 
+month in sample:7
+
+          n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    169,991        5.58        5.58
+          1 |  2,877,548       94.42      100.00
+------------+-----------------------------------
+      Total |  3,047,539      100.00
+ 
+month in sample:8
+
+          n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    159,970        5.22        5.22
+          1 |  2,904,452       94.78      100.00
+------------+-----------------------------------
+      Total |  3,064,422      100.00
+
+. 
+. 
+. ** check id mismatch
+. 
+. * dummies for race
+. decode race, gen(race_string)
+
+. gen white = ( strpos(race_,"white")>0 )
+
+. gen black = ( strpos(race_,"black")>0 )
+
+. gen asian = ( strpos(race_,"asian")>0 )
+
+. gen pacific = ( strpos(race_,"pacific")>0 )
+
+. gen native  = ( strpos(race_,"hawaiian") + strpos(race_,"american") + strpos(race_,"aleut") + strpos(race_
+> ,"eskimo") > 0 )
+
+. gen tmp = white + black + asian + native + pacific
+
+. gen no_race = tmp == 0
+
+. 
+. * check
+. tab race if white
+
+                                   race |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+                                  white | 20,098,411       98.78       98.78
+                            white-black |     46,638        0.23       99.01
+                  white-american indian |    126,669        0.62       99.63
+                            white-asian |     39,523        0.19       99.83
+        white-hawaiian/pacific islander |     13,668        0.07       99.90
+            white-black-american indian |      8,250        0.04       99.94
+                      white-black-asian |        710        0.00       99.94
+            white-american indian-asian |      1,170        0.01       99.95
+  white-asian-hawaiian/pacific islander |     10,435        0.05      100.00
+      white-black-american indian-asian |        391        0.00      100.00
+ white-black--hawaiian/pacific islander |        107        0.00      100.00
+white-american indian-hawaiian/pacific  |        200        0.00      100.00
+white-american indian-asian-hawaiian/pa |         44        0.00      100.00
+----------------------------------------+-----------------------------------
+                                  Total | 20,346,216      100.00
+
+. tab race if black
+
+                                   race |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+                                  black |  2,447,796       97.04       97.04
+                            white-black |     46,638        1.85       98.89
+                  black-american indian |     14,200        0.56       99.45
+                            black-asian |      3,321        0.13       99.59
+        black-hawaiian/pacific islander |        902        0.04       99.62
+            white-black-american indian |      8,250        0.33       99.95
+                      white-black-asian |        710        0.03       99.98
+      white-black-american indian-asian |        391        0.02       99.99
+ white-black--hawaiian/pacific islander |        107        0.00      100.00
+            black-american indian-asian |         85        0.00      100.00
+----------------------------------------+-----------------------------------
+                                  Total |  2,522,400      100.00
+
+. tab race if asian
+
+                                   race |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+              asian or pacific islander |    290,917       25.07       25.07
+                             asian only |    799,800       68.93       94.00
+                            white-asian |     39,523        3.41       97.41
+                            black-asian |      3,321        0.29       97.69
+                  american indian-asian |        839        0.07       97.76
+        asian-hawaiian/pacific islander |     13,111        1.13       98.89
+                      white-black-asian |        710        0.06       98.96
+            white-american indian-asian |      1,170        0.10       99.06
+  white-asian-hawaiian/pacific islander |     10,435        0.90       99.96
+      white-black-american indian-asian |        391        0.03       99.99
+            black-american indian-asian |         85        0.01      100.00
+white-american indian-asian-hawaiian/pa |         44        0.00      100.00
+----------------------------------------+-----------------------------------
+                                  Total |  1,160,346      100.00
+
+. tab race if native
+
+                                   race |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+           american indian/aleut/eskimo |    292,618       52.92       52.92
+         hawaiian/pacific islander only |     70,079       12.67       65.60
+                  white-american indian |    126,669       22.91       88.51
+        white-hawaiian/pacific islander |     13,668        2.47       90.98
+                  black-american indian |     14,200        2.57       93.55
+        black-hawaiian/pacific islander |        902        0.16       93.71
+                  american indian-asian |        839        0.15       93.86
+        asian-hawaiian/pacific islander |     13,111        2.37       96.24
+            white-black-american indian |      8,250        1.49       97.73
+            white-american indian-asian |      1,170        0.21       97.94
+  white-asian-hawaiian/pacific islander |     10,435        1.89       99.83
+      white-black-american indian-asian |        391        0.07       99.90
+american indian-hawaiian/pacific island |        130        0.02       99.92
+ white-black--hawaiian/pacific islander |        107        0.02       99.94
+white-american indian-hawaiian/pacific  |        200        0.04       99.98
+            black-american indian-asian |         85        0.02       99.99
+white-american indian-asian-hawaiian/pa |         44        0.01      100.00
+----------------------------------------+-----------------------------------
+                                  Total |    552,898      100.00
+
+. tab race if pacific
+
+                                   race |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+              asian or pacific islander |    290,917       72.80       72.80
+         hawaiian/pacific islander only |     70,079       17.54       90.34
+        white-hawaiian/pacific islander |     13,668        3.42       93.76
+        black-hawaiian/pacific islander |        902        0.23       93.99
+        asian-hawaiian/pacific islander |     13,111        3.28       97.27
+  white-asian-hawaiian/pacific islander |     10,435        2.61       99.88
+american indian-hawaiian/pacific island |        130        0.03       99.91
+ white-black--hawaiian/pacific islander |        107        0.03       99.94
+white-american indian-hawaiian/pacific  |        200        0.05       99.99
+white-american indian-asian-hawaiian/pa |         44        0.01      100.00
+----------------------------------------+-----------------------------------
+                                  Total |    399,593      100.00
+
+. tab race if no_race
+
+                                   race |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+             other (single) race, n.e.c |      4,447       58.95       58.95
+        two or three races, unspecified |      2,173       28.80       87.75
+        four or five races, unspecified |        924       12.25      100.00
+----------------------------------------+-----------------------------------
+                                  Total |      7,544      100.00
+
+. 
+. 
+. * identify mismatched based on sex
+. gen mismatch = .
+(24,287,558 missing values generated)
+
+. foreach i of numlist 2 3 4 6 7 8 {
+  2. replace mismatch = 0 if mish == `i' & n == 1
+  3. replace mismatch = 1 if mish == `i' & n == 1 & ( L.sex != sex )
+  4. }
+(2,801,453 real changes made)
+(3,019 real changes made)
+(2,883,862 real changes made)
+(1,837 real changes made)
+(2,896,142 real changes made)
+(1,359 real changes made)
+(2,819,061 real changes made)
+(1,658 real changes made)
+(2,877,548 real changes made)
+(1,099 real changes made)
+(2,904,452 real changes made)
+(868 real changes made)
+
+. 
+. * age
+. foreach i of numlist 2 3 4 6 7 8 {
+  2. replace mismatch = 1 if mish == `i' & n == 1 & ( L.age > age | age > L.age+1 )
+  3. }
+(46,347 real changes made)
+(25,597 real changes made)
+(19,086 real changes made)
+(19,188 real changes made)
+(14,487 real changes made)
+(12,754 real changes made)
+
+. 
+. * race
+. foreach i of numlist 2 3 4 6 7 8 {
+  2. replace mismatch = 1 if mish == `i' & n == 1 & ( L.race != race ) & ( L.no_race == 0 | no_race == 0 )
+  3. }
+(3,329 real changes made)
+(2,907 real changes made)
+(2,540 real changes made)
+(2,336 real changes made)
+(2,464 real changes made)
+(2,186 real changes made)
+
+. 
+. * count number of mismatched per id
+. by cpsidp, sort: egen sum_mismatch = sum(mismatch)
+
+. 
+. * sample: remove mismatched and id with three or more mismatched in total
+. foreach i of numlist 2 3 4 6 7 8 {
+  2. replace n = 0 if mish == `i' & ( mismatch == 1 | sum_mismatch > 2 )
+  3. }
+(53,321 real changes made)
+(31,069 real changes made)
+(23,804 real changes made)
+(24,469 real changes made)
+(19,472 real changes made)
+(17,388 real changes made)
+
+. 
+. * final sample
+. tab n, miss
+
+          n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  1,312,663        5.40        5.40
+          1 | 17,012,995       70.05       75.45
+          . |  5,961,900       24.55      100.00
+------------+-----------------------------------
+      Total | 24,287,558      100.00
+
+. 
+. 
+. * tabulate by interview month
+. foreach i of numlist 2 3 4 6 7 8 {
+  2. 
+. disp " "
+  3. disp "month in sample:" `i'
+  4. tab mismatch if mish == `i', miss
+  5. tab sum_mism if mish == `i'
+  6. 
+. }
+ 
+month in sample:2
+
+   mismatch |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,748,758       89.95       89.95
+          1 |     52,695        1.72       91.67
+          . |    254,556        8.33      100.00
+------------+-----------------------------------
+      Total |  3,056,009      100.00
+
+sum_mismatc |
+          h |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,952,095       96.60       96.60
+          1 |     88,315        2.89       99.49
+          2 |     12,262        0.40       99.89
+          3 |      2,590        0.08       99.98
+          4 |        541        0.02       99.99
+          5 |        171        0.01      100.00
+          6 |         35        0.00      100.00
+------------+-----------------------------------
+      Total |  3,056,009      100.00
+ 
+month in sample:3
+
+   mismatch |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,853,521       93.21       93.21
+          1 |     30,341        0.99       94.20
+          . |    177,616        5.80      100.00
+------------+-----------------------------------
+      Total |  3,061,478      100.00
+
+sum_mismatc |
+          h |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,956,477       96.57       96.57
+          1 |     89,179        2.91       99.48
+          2 |     12,432        0.41       99.89
+          3 |      2,639        0.09       99.98
+          4 |        545        0.02       99.99
+          5 |        171        0.01      100.00
+          6 |         35        0.00      100.00
+------------+-----------------------------------
+      Total |  3,061,478      100.00
+ 
+month in sample:4
+
+   mismatch |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,873,157       93.97       93.97
+          1 |     22,985        0.75       94.72
+          . |    161,382        5.28      100.00
+------------+-----------------------------------
+      Total |  3,057,524      100.00
+
+sum_mismatc |
+          h |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,956,223       96.69       96.69
+          1 |     85,991        2.81       99.50
+          2 |     11,956        0.39       99.89
+          3 |      2,618        0.09       99.98
+          4 |        532        0.02       99.99
+          5 |        169        0.01      100.00
+          6 |         35        0.00      100.00
+------------+-----------------------------------
+      Total |  3,057,524      100.00
+ 
+month in sample:6
+
+   mismatch |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,795,879       92.01       92.01
+          1 |     23,182        0.76       92.77
+          . |    219,625        7.23      100.00
+------------+-----------------------------------
+      Total |  3,038,686      100.00
+
+sum_mismatc |
+          h |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,936,983       96.65       96.65
+          1 |     86,339        2.84       99.49
+          2 |     12,087        0.40       99.89
+          3 |      2,528        0.08       99.98
+          4 |        543        0.02       99.99
+          5 |        171        0.01      100.00
+          6 |         35        0.00      100.00
+------------+-----------------------------------
+      Total |  3,038,686      100.00
+ 
+month in sample:7
+
+   mismatch |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,859,498       93.83       93.83
+          1 |     18,050        0.59       94.42
+          . |    169,991        5.58      100.00
+------------+-----------------------------------
+      Total |  3,047,539      100.00
+
+sum_mismatc |
+          h |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,945,346       96.65       96.65
+          1 |     87,022        2.86       99.50
+          2 |     11,934        0.39       99.89
+          3 |      2,494        0.08       99.98
+          4 |        537        0.02       99.99
+          5 |        171        0.01      100.00
+          6 |         35        0.00      100.00
+------------+-----------------------------------
+      Total |  3,047,539      100.00
+ 
+month in sample:8
+
+   mismatch |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,888,644       94.26       94.26
+          1 |     15,808        0.52       94.78
+          . |    159,970        5.22      100.00
+------------+-----------------------------------
+      Total |  3,064,422      100.00
+
+sum_mismatc |
+          h |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  2,964,875       96.75       96.75
+          1 |     84,801        2.77       99.52
+          2 |     11,551        0.38       99.90
+          3 |      2,466        0.08       99.98
+          4 |        525        0.02       99.99
+          5 |        169        0.01      100.00
+          6 |         35        0.00      100.00
+------------+-----------------------------------
+      Total |  3,064,422      100.00
+
+. 
+. * cleanup
+. drop sex *race* mismatch sum_mism white black asian pacific native tmp 
+
+. 
+. **
+. **
+. 
+. ** panel weight
+. gen panelweights = (1/2)*( L.wtfinl + wtfinl ) if n==1
+(7,274,563 missing values generated)
+
+. sum panelweights
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+panelweights | 17,012,995    2260.962    1208.622    34.3936   33490.86
+
+. 
+. 
+. ******
+. ******
+. 
+. * 2. LABOR MARKET STATUS VARIABLES
+. 
+. * Employment 
+. gen E = (empstat >= 10 & empstat <= 12)
+
+. 
+. * Unemployment
+. gen U = (empstat >= 20 & empstat <= 22)
+
+. 
+. * Non-participant
+. gen I = (empstat >= 30 & empstat <= 36)
+
+. 
+. * Non-employed
+. gen N = U+I                     //non-employment state
+
+. 
+. 
+. * check
+. tab empstat if E, miss
+
+             employment status |      Freq.     Percent        Cum.
+-------------------------------+-----------------------------------
+                       at work | 16,348,784       96.07       96.07
+has job, not at work last week |    668,109        3.93      100.00
+-------------------------------+-----------------------------------
+                         Total | 17,016,893      100.00
+
+. tab empstat if U, miss
+
+             employment status |      Freq.     Percent        Cum.
+-------------------------------+-----------------------------------
+unemployed, experienced worker |    895,985       94.54       94.54
+        unemployed, new worker |     51,712        5.46      100.00
+-------------------------------+-----------------------------------
+                         Total |    947,697      100.00
+
+. tab empstat if I, miss
+
+             employment status |      Freq.     Percent        Cum.
+-------------------------------+-----------------------------------
+          nilf, unable to work |  1,251,647       19.80       19.80
+                   nilf, other |  2,921,806       46.21       66.00
+                 nilf, retired |  2,149,515       34.00      100.00
+-------------------------------+-----------------------------------
+                         Total |  6,322,968      100.00
+
+. tab empstat if N, miss
+
+             employment status |      Freq.     Percent        Cum.
+-------------------------------+-----------------------------------
+unemployed, experienced worker |    895,985       12.32       12.32
+        unemployed, new worker |     51,712        0.71       13.03
+          nilf, unable to work |  1,251,647       17.22       30.25
+                   nilf, other |  2,921,806       40.19       70.44
+                 nilf, retired |  2,149,515       29.56      100.00
+-------------------------------+-----------------------------------
+                         Total |  7,270,665      100.00
+
+. 
+. * save intermediate datasets (with panel variables and LM dummies)
+. save "$working_dir\Dta\CPS_data_2", replace
+file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted202
+> 3\Replication_files\Stata\Dta\CPS_data_2.dta saved
+
+. 
+. ******
+. ******
+. 
+. * AGGREGATE WORKER FLOWS 
+. do 1a_aggregate
+
+. * AGGREGATE TRANSITION RATES
+. 
+. * data
+. use "$working_dir\Dta\CPS_data_2", clear
+
+. 
+. ** DUMMIES
+. 
+. ** from E
+. gen E0 = L.E if n == 1
+(7,274,563 missing values generated)
+
+. gen E_U = ( L.E == 1 & U == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. gen E_I = ( L.E == 1 & I == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. 
+. ** from U
+. gen U0 = L.U if n == 1
+(7,274,563 missing values generated)
+
+. gen U_E = ( L.U == 1 & E == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. gen U_I = ( L.U == 1 & I == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. 
+. ** from I
+. gen I0 = L.I if n == 1
+(7,274,563 missing values generated)
+
+. gen I_E = ( L.I == 1 & E == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. gen I_U = ( L.I == 1 & U == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. 
+. 
+. ** EE (employer to employer) dummies
+. tab empsame if E0 == 1 & E == 1
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |    253,754        2.20        2.20
+        yes | 10,748,122       93.28       95.49
+    refused |      2,968        0.03       95.51
+ don't know |      2,059        0.02       95.53
+        niu |    514,933        4.47      100.00
+------------+-----------------------------------
+      Total | 11,521,836      100.00
+
+. by year, sort: tab empsame if E0 == 1 & E == 1
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1995
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      3,445        2.73        2.73
+        yes |    121,472       96.26       98.99
+    refused |         13        0.01       99.00
+ don't know |         20        0.02       99.02
+        niu |      1,240        0.98      100.00
+------------+-----------------------------------
+      Total |    126,190      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1996
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,791        2.78        2.78
+        yes |    442,225       96.21       98.99
+    refused |         69        0.02       99.01
+ don't know |         83        0.02       99.03
+        niu |      4,479        0.97      100.00
+------------+-----------------------------------
+      Total |    459,647      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1997
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,285        2.84        2.84
+        yes |    449,697       96.10       98.94
+    refused |         77        0.02       98.96
+ don't know |         74        0.02       98.97
+        niu |      4,806        1.03      100.00
+------------+-----------------------------------
+      Total |    467,939      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1998
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,986        2.75        2.75
+        yes |    452,579       96.01       98.77
+    refused |        117        0.02       98.79
+ don't know |         84        0.02       98.81
+        niu |      5,614        1.19      100.00
+------------+-----------------------------------
+      Total |    471,380      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1999
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,046        2.76        2.76
+        yes |    452,723       95.61       98.37
+    refused |        112        0.02       98.39
+ don't know |         72        0.02       98.40
+        niu |      7,556        1.60      100.00
+------------+-----------------------------------
+      Total |    473,509      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2000
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,529        2.85        2.85
+        yes |    452,088       95.28       98.13
+    refused |        144        0.03       98.17
+ don't know |        117        0.02       98.19
+        niu |      8,588        1.81      100.00
+------------+-----------------------------------
+      Total |    474,466      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2001
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,301        2.64        2.64
+        yes |    480,173       95.33       97.97
+    refused |        173        0.03       98.00
+ don't know |        158        0.03       98.03
+        niu |      9,901        1.97      100.00
+------------+-----------------------------------
+      Total |    503,706      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2002
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,325        2.44        2.44
+        yes |    521,157       95.37       97.81
+    refused |        163        0.03       97.84
+ don't know |        110        0.02       97.86
+        niu |     11,688        2.14      100.00
+------------+-----------------------------------
+      Total |    546,443      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2003
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,123        2.26        2.26
+        yes |    511,374       95.51       97.77
+    refused |        154        0.03       97.80
+ don't know |         99        0.02       97.82
+        niu |     11,683        2.18      100.00
+------------+-----------------------------------
+      Total |    535,433      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2004
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,628        2.38        2.38
+        yes |    504,736       95.23       97.61
+    refused |        169        0.03       97.64
+ don't know |        111        0.02       97.66
+        niu |     12,379        2.34      100.00
+------------+-----------------------------------
+      Total |    530,023      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2005
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,815        2.43        2.43
+        yes |    502,923       95.18       97.61
+    refused |        163        0.03       97.64
+ don't know |        123        0.02       97.66
+        niu |     12,349        2.34      100.00
+------------+-----------------------------------
+      Total |    528,373      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2006
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,576        2.38        2.38
+        yes |    501,598       95.11       97.49
+    refused |        194        0.04       97.53
+ don't know |         92        0.02       97.55
+        niu |     12,946        2.45      100.00
+------------+-----------------------------------
+      Total |    527,406      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2007
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     11,060        2.12        2.12
+        yes |    491,882       94.09       96.20
+    refused |        121        0.02       96.23
+ don't know |         78        0.01       96.24
+        niu |     19,656        3.76      100.00
+------------+-----------------------------------
+      Total |    522,797      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2008
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     10,245        1.97        1.97
+        yes |    484,118       93.14       95.11
+    refused |        104        0.02       95.13
+ don't know |         76        0.01       95.15
+        niu |     25,216        4.85      100.00
+------------+-----------------------------------
+      Total |    519,759      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2009
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,697        1.73        1.73
+        yes |    464,536       92.24       93.96
+    refused |         85        0.02       93.98
+ don't know |         74        0.01       93.99
+        niu |     30,247        6.01      100.00
+------------+-----------------------------------
+      Total |    503,639      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2010
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,538        1.71        1.71
+        yes |    457,327       91.81       93.53
+    refused |        121        0.02       93.55
+ don't know |         70        0.01       93.56
+        niu |     32,057        6.44      100.00
+------------+-----------------------------------
+      Total |    498,113      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2011
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,472        1.72        1.72
+        yes |    450,426       91.61       93.33
+    refused |        114        0.02       93.35
+ don't know |         64        0.01       93.37
+        niu |     32,610        6.63      100.00
+------------+-----------------------------------
+      Total |    491,686      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2012
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,681        1.77        1.77
+        yes |    449,922       91.58       93.35
+    refused |        148        0.03       93.38
+ don't know |         82        0.02       93.40
+        niu |     32,442        6.60      100.00
+------------+-----------------------------------
+      Total |    491,275      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2013
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,552        1.76        1.76
+        yes |    443,457       91.01       92.77
+    refused |        108        0.02       92.79
+ don't know |         80        0.02       92.81
+        niu |     35,039        7.19      100.00
+------------+-----------------------------------
+      Total |    487,236      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2014
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      9,010        1.85        1.85
+        yes |    440,433       90.28       92.12
+    refused |        121        0.02       92.15
+ don't know |         75        0.02       92.16
+        niu |     38,231        7.84      100.00
+------------+-----------------------------------
+      Total |    487,870      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2015
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      9,003        1.89        1.89
+        yes |    419,546       88.22       90.11
+    refused |        124        0.03       90.14
+ don't know |         80        0.02       90.16
+        niu |     46,812        9.84      100.00
+------------+-----------------------------------
+      Total |    475,565      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2016
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,944        1.88        1.88
+        yes |    426,091       89.63       91.51
+    refused |        134        0.03       91.54
+ don't know |         77        0.02       91.55
+        niu |     40,154        8.45      100.00
+------------+-----------------------------------
+      Total |    475,400      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2017
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,699        1.86        1.86
+        yes |    420,182       89.62       91.47
+    refused |        121        0.03       91.50
+ don't know |         83        0.02       91.52
+        niu |     39,782        8.48      100.00
+------------+-----------------------------------
+      Total |    468,867      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2018
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,003        1.76        1.76
+        yes |    407,457       89.53       91.29
+    refused |        119        0.03       91.31
+ don't know |         77        0.02       91.33
+        niu |     39,458        8.67      100.00
+------------+-----------------------------------
+      Total |    455,114      100.00
+
+
+. sort cpsidp date
+
+. 
+. * gen dummies for employment stayers with non missing samemp
+. gen E0b = L.E if n == 1 & empsame >= 1 & empsame <= 2 
+(13,281,523 missing values generated)
+
+. gen E_E  = (L.E == 1 & E == 1 & empsame == 1) if n == 1 & empsame >= 1 & empsame <= 2
+(13,281,523 missing values generated)
+
+. 
+. 
+. * list of variables
+. #delimit ; 
+delimiter now ;
+. global varlist =  " (sum) E (sum) U (sum) I
+>                                     (sum) E0 (sum) U0 (sum) I0
+>                                     (sum) E_U (sum) E_I 
+>                                     (sum) U_E (sum) U_I
+>                                     (sum) I_E (sum) I_U 
+>                                         (sum) E0b (sum) E_E ";
+
+. #delimit cr
+delimiter now cr
+. 
+. * Collapse to get aggregates
+. collapse $varlist [w=panelweights], by( date year month )
+(analytic weights assumed)
+
+. sort date
+
+. 
+. * compute ratio to pop
+. gen e = E / (E + U + I)
+
+. gen u = U / (E + U + I)
+
+. gen i = 1 - e - u
+
+. 
+. * compute transition probabilities between E, U, I
+. gen eu = E_U / E0
+
+. gen ei = E_I / E0
+
+. 
+. gen ue = U_E / U0
+
+. gen ui = U_I / U0
+
+. 
+. gen ie = I_E / I0
+
+. gen iu = I_U / I0
+
+. 
+. * compute EE transitions
+. gen ee = E_E / E0b
+
+. 
+. * cleanup
+. keep date year month e u i eu ei ue ui ie iu ee
+
+. 
+. 
+. *******
+. *******
+. 
+. 
+. ** RMA seasonal adjustment
+. tsset date
+        time variable:  date, 1995m10 to 2018m12
+                delta:  1 month
+
+. 
+. * loop over transition probabilities
+. foreach var in e u i eu ei ue ui ie iu ee {
+  2. 
+. * 13-month centered moving average
+. tssmooth ma moving_average = `var', window(6 1 6) 
+  3. 
+. * actual-to-smoothed ratio
+. gen ma_ratio = `var' / moving_average
+  4. 
+. * compute calendar-month average
+. egen month_average = mean( ma_ratio ), by( month )
+  5. 
+. * center the ratio index around one
+. egen index_average = mean( month_average )
+  6. gen month_average_centered = 1 + ( month_average - index_average )
+  7. 
+. * compute the seasonnaly adjusted series
+. gen `var'_sa = `var' / month_average_centered
+  8. 
+. * cleanup
+. drop moving_average ma_ratio month_average index_average month_average_centered
+  9. 
+. }
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= e
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= u
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= i
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= eu
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= ei
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= ue
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= ui
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= ie
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= iu
+The smoother applied was
+     (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) + x(t+3) +
+     x(t+4) + x(t+5) + ...; x(t)= ee
+
+. 
+. * rename sa variables and drop raw series
+. drop e u i eu ei ue ui ie iu ee
+
+. rename *_sa *
+
+. 
+. 
+. *******
+. *******
+. 
+. 
+. ** quarterly averages
+. 
+. * quarter
+. gen quarter = ceil(month/3)
+
+. 
+. * time variables
+. gen year_str = string(year)
+
+. gen quarter_str = string(quarter)
+
+. gen date_str = year_str + "q" + quarter_str
+
+. gen date_ = quarterly( date_str, "YQ" )
+
+. drop date *_str
+
+. rename date_ date
+
+. 
+. * collapse to get unweighted quarterly averages
+. collapse e u i eu ei ue ui ie iu ee, by( date year quarter )
+
+. tsset date, quarter
+        time variable:  date, 1995q4 to 2018q4
+                delta:  1 quarter
+
+. order date year quarter
+
+. sort date year quarter
+
+. 
+. 
+. *******
+. *******
+. 
+. * export in R folder
+. export delimited "$R_directory\Data\CPS_flows", replace
+file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted202
+> 3\Replication_files\R\Data\CPS_flows.csv saved
+
+. 
+end of do-file
+
+. 
+. ******
+. ******
+. 
+. * TRANSITION RATES BY AGE
+. do 1b_age
+
+. * TRANSITION PROBABILITIES BY AGE
+. 
+. * data
+. use "$working_dir\Dta\CPS_data_2", clear
+
+. 
+. ** DUMMIES
+. 
+. ** from E
+. gen E0 = L.E if n == 1
+(7,274,563 missing values generated)
+
+. gen E_U = ( L.E == 1 & U == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. gen E_I = ( L.E == 1 & I == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. 
+. ** from U
+. gen U0 = L.U if n == 1
+(7,274,563 missing values generated)
+
+. gen U_E = ( L.U == 1 & E == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. gen U_I = ( L.U == 1 & I == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. 
+. ** from I
+. gen I0 = L.I if n == 1
+(7,274,563 missing values generated)
+
+. gen I_E = ( L.I == 1 & E == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. gen I_U = ( L.I == 1 & U == 1 ) if n == 1
+(7,274,563 missing values generated)
+
+. 
+. 
+. ** EE (employer to employer) dummies
+. tab empsame if E0 == 1 & E == 1
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |    253,754        2.20        2.20
+        yes | 10,748,122       93.28       95.49
+    refused |      2,968        0.03       95.51
+ don't know |      2,059        0.02       95.53
+        niu |    514,933        4.47      100.00
+------------+-----------------------------------
+      Total | 11,521,836      100.00
+
+. by year, sort: tab empsame if E0 == 1 & E == 1
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1995
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      3,445        2.73        2.73
+        yes |    121,472       96.26       98.99
+    refused |         13        0.01       99.00
+ don't know |         20        0.02       99.02
+        niu |      1,240        0.98      100.00
+------------+-----------------------------------
+      Total |    126,190      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1996
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,791        2.78        2.78
+        yes |    442,225       96.21       98.99
+    refused |         69        0.02       99.01
+ don't know |         83        0.02       99.03
+        niu |      4,479        0.97      100.00
+------------+-----------------------------------
+      Total |    459,647      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1997
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,285        2.84        2.84
+        yes |    449,697       96.10       98.94
+    refused |         77        0.02       98.96
+ don't know |         74        0.02       98.97
+        niu |      4,806        1.03      100.00
+------------+-----------------------------------
+      Total |    467,939      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1998
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,986        2.75        2.75
+        yes |    452,579       96.01       98.77
+    refused |        117        0.02       98.79
+ don't know |         84        0.02       98.81
+        niu |      5,614        1.19      100.00
+------------+-----------------------------------
+      Total |    471,380      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 1999
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,046        2.76        2.76
+        yes |    452,723       95.61       98.37
+    refused |        112        0.02       98.39
+ don't know |         72        0.02       98.40
+        niu |      7,556        1.60      100.00
+------------+-----------------------------------
+      Total |    473,509      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2000
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,529        2.85        2.85
+        yes |    452,088       95.28       98.13
+    refused |        144        0.03       98.17
+ don't know |        117        0.02       98.19
+        niu |      8,588        1.81      100.00
+------------+-----------------------------------
+      Total |    474,466      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2001
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,301        2.64        2.64
+        yes |    480,173       95.33       97.97
+    refused |        173        0.03       98.00
+ don't know |        158        0.03       98.03
+        niu |      9,901        1.97      100.00
+------------+-----------------------------------
+      Total |    503,706      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2002
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     13,325        2.44        2.44
+        yes |    521,157       95.37       97.81
+    refused |        163        0.03       97.84
+ don't know |        110        0.02       97.86
+        niu |     11,688        2.14      100.00
+------------+-----------------------------------
+      Total |    546,443      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2003
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,123        2.26        2.26
+        yes |    511,374       95.51       97.77
+    refused |        154        0.03       97.80
+ don't know |         99        0.02       97.82
+        niu |     11,683        2.18      100.00
+------------+-----------------------------------
+      Total |    535,433      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2004
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,628        2.38        2.38
+        yes |    504,736       95.23       97.61
+    refused |        169        0.03       97.64
+ don't know |        111        0.02       97.66
+        niu |     12,379        2.34      100.00
+------------+-----------------------------------
+      Total |    530,023      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2005
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,815        2.43        2.43
+        yes |    502,923       95.18       97.61
+    refused |        163        0.03       97.64
+ don't know |        123        0.02       97.66
+        niu |     12,349        2.34      100.00
+------------+-----------------------------------
+      Total |    528,373      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2006
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     12,576        2.38        2.38
+        yes |    501,598       95.11       97.49
+    refused |        194        0.04       97.53
+ don't know |         92        0.02       97.55
+        niu |     12,946        2.45      100.00
+------------+-----------------------------------
+      Total |    527,406      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2007
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     11,060        2.12        2.12
+        yes |    491,882       94.09       96.20
+    refused |        121        0.02       96.23
+ don't know |         78        0.01       96.24
+        niu |     19,656        3.76      100.00
+------------+-----------------------------------
+      Total |    522,797      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2008
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |     10,245        1.97        1.97
+        yes |    484,118       93.14       95.11
+    refused |        104        0.02       95.13
+ don't know |         76        0.01       95.15
+        niu |     25,216        4.85      100.00
+------------+-----------------------------------
+      Total |    519,759      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2009
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,697        1.73        1.73
+        yes |    464,536       92.24       93.96
+    refused |         85        0.02       93.98
+ don't know |         74        0.01       93.99
+        niu |     30,247        6.01      100.00
+------------+-----------------------------------
+      Total |    503,639      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2010
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,538        1.71        1.71
+        yes |    457,327       91.81       93.53
+    refused |        121        0.02       93.55
+ don't know |         70        0.01       93.56
+        niu |     32,057        6.44      100.00
+------------+-----------------------------------
+      Total |    498,113      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2011
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,472        1.72        1.72
+        yes |    450,426       91.61       93.33
+    refused |        114        0.02       93.35
+ don't know |         64        0.01       93.37
+        niu |     32,610        6.63      100.00
+------------+-----------------------------------
+      Total |    491,686      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2012
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,681        1.77        1.77
+        yes |    449,922       91.58       93.35
+    refused |        148        0.03       93.38
+ don't know |         82        0.02       93.40
+        niu |     32,442        6.60      100.00
+------------+-----------------------------------
+      Total |    491,275      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2013
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,552        1.76        1.76
+        yes |    443,457       91.01       92.77
+    refused |        108        0.02       92.79
+ don't know |         80        0.02       92.81
+        niu |     35,039        7.19      100.00
+------------+-----------------------------------
+      Total |    487,236      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2014
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      9,010        1.85        1.85
+        yes |    440,433       90.28       92.12
+    refused |        121        0.02       92.15
+ don't know |         75        0.02       92.16
+        niu |     38,231        7.84      100.00
+------------+-----------------------------------
+      Total |    487,870      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2015
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      9,003        1.89        1.89
+        yes |    419,546       88.22       90.11
+    refused |        124        0.03       90.14
+ don't know |         80        0.02       90.16
+        niu |     46,812        9.84      100.00
+------------+-----------------------------------
+      Total |    475,565      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2016
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,944        1.88        1.88
+        yes |    426,091       89.63       91.51
+    refused |        134        0.03       91.54
+ don't know |         77        0.02       91.55
+        niu |     40,154        8.45      100.00
+------------+-----------------------------------
+      Total |    475,400      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2017
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,699        1.86        1.86
+        yes |    420,182       89.62       91.47
+    refused |        121        0.03       91.50
+ don't know |         83        0.02       91.52
+        niu |     39,782        8.48      100.00
+------------+-----------------------------------
+      Total |    468,867      100.00
+
+------------------------------------------------------------------------------------------------------------
+-> year = 2018
+
+      still |
+working for |
+       same |
+   employer |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |      8,003        1.76        1.76
+        yes |    407,457       89.53       91.29
+    refused |        119        0.03       91.31
+ don't know |         77        0.02       91.33
+        niu |     39,458        8.67      100.00
+------------+-----------------------------------
+      Total |    455,114      100.00
+
+
+. sort cpsidp date
+
+. 
+. * gen dummies for employment stayers with non missing samemp
+. gen E0b = L.E if n == 1 & empsame >= 1 & empsame <= 2 
+(13,281,523 missing values generated)
+
+. gen E_E  = (L.E == 1 & E == 1 & empsame == 1) if n == 1 & empsame >= 1 & empsame <= 2
+(13,281,523 missing values generated)
+
+. 
+. 
+. * list of variables
+. #delimit ; 
+delimiter now ;
+. global varlist =  " (sum) E (sum) U (sum) I
+>                                     (sum) E0 (sum) U0 (sum) I0
+>                                     (sum) E_U (sum) E_I 
+>                                     (sum) U_E (sum) U_I
+>                                     (sum) I_E (sum) I_U 
+>                                         (sum) E0b (sum) E_E ";
+
+. #delimit cr
+delimiter now cr
+. 
+. 
+. *****
+. *****
+. 
+. ** COMPUTE TRANSITION PROBA
+. 
+. * collapse to compute flows and laggued stocks
+. collapse $varlist [w=panelweights], by( date year month age )
+(analytic weights assumed)
+
+. 
+. order date age
+
+. sort  date age
+
+. 
+. * compute ratios to pop
+. gen e = E / (E + U + I)
+
+. gen u = U / (E + U + I)
+
+. gen i = 1 - e - u
+
+. 
+. * transitions
+. gen eu = E_U / E0
+
+. gen ei = E_I / E0
+
+. 
+. gen ue = U_E / U0
+(16 missing values generated)
+
+. gen ui = U_I / U0
+(16 missing values generated)
+
+. 
+. gen ie = I_E / I0
+
+. gen iu = I_U / I0
+
+. 
+. gen ee = E_E / E0b
+
+. 
+. * cleanup
+. keep date year month age e u i eu ei ue ui ie iu ee
+
+. 
+. *****
+. *****
+. 
+. ** RMA seasonal adjustment
+. tsset date age
+       panel variable:  date (strongly balanced)
+        time variable:  age, 18 to 70
+                delta:  1 unit
+
+. 
+. * loop over transition probabilities
+. foreach var in e u i eu ei ue ui ie iu ee {
+  2. 
+. * 13-month centered moving average
+. tssmooth ma moving_average = `var', window(6 1 6) 
+  3. 
+. * actual-to-smoothed ratio
+. gen ma_ratio = `var' / moving_average
+  4. 
+. * compute calendar-month average
+. egen month_average = mean( ma_ratio ), by( month age )
+  5. 
+. * center the ratio index around one
+. egen index_average = mean( month_average ), by( age )
+  6. gen month_average_centered = 1 + ( month_average - index_average )
+  7. 
+. * compute the seasonnaly adjusted series
+. gen `var'_sa = `var' / month_average_centered
+  8. 
+. * cleanup
+. drop moving_average ma_ratio month_average index_average month_average_centered
+  9. 
+. }
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= e
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= u
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= i
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= eu
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= ei
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= ue
+(16 missing values generated)
+(16 missing values generated)
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= ui
+(16 missing values generated)
+(16 missing values generated)
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= ie
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= iu
+The smoother applied was
+     by date : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) + x(t+2) +
+     x(t+3) + x(t+4) + x(t+5) + ...; x(t)= ee
+
+. 
+. * rename sa variables and drop raw series
+. drop e u i eu ei ue ui ie iu ee
+
+. rename *_sa *
+
+. 
+. *****
+. *****
+. 
+. * Quarterly averages
+. 
+. * quarter
+. gen quarter = ceil(month/3)
+
+. 
+. * time variables
+. gen year_str = string(year)
+
+. gen quarter_str = string(quarter)
+
+. gen date_str = year_str + "q" + quarter_str
+
+. gen date_ = quarterly( date_str, "YQ" )
+
+. 
+. drop date *_str
+
+. rename date_ date
+
+. 
+. * collapse to get unweighted quarterly averages
+. collapse e u i eu ei ue ui ie iu ee, by( date year quarter age )
+
+. tsset age date, quarter
+       panel variable:  age (strongly balanced)
+        time variable:  date, 1995q4 to 2018q4
+                delta:  1 quarter
+
+. order date year quarter age
+
+. sort date year quarter age
+
+. 
+. *****
+. *****
+. 
+. * export in R
+. export delimited "$R_directory\Data\CPS_flows_age", replace
+file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted202
+> 3\Replication_files\R\Data\CPS_flows_age.csv saved
+
+. 
+end of do-file
+
+. 
+. ******
+. ******
+. 
+. * TRANSITION RATES  TENURE
+. do 1c_job_tenure.do
+
+. * TRANSITION PROBABILITIES BY JOB TENURE
+. 
+. * data
+. use "$working_dir\Dta\CPS_data_2", clear
+
+. 
+. * weights
+. sort cpsidp date
+
+. gen ten_weights = L.jtsuppwt
+(23,551,295 missing values generated)
+
+. 
+. * lagged tenure in years
+. gen tenure0 = floor(L.jtyears) if L.jtyears < 99 & n == 1
+(23,837,735 missing values generated)
+
+. 
+. * Employment dummy, lagged
+. gen E0 = L.E if L.jtresp == 2 & L.jtyears < 99 & n == 1
+(23,837,735 missing values generated)
+
+. 
+. * Employment dummy, lagged, with interview dependant info 
+. gen E0b = L.E if L.jtresp == 2 & L.jtyears < 99 & empsame >= 1 & empsame <= 2 & n == 1
+(23,862,307 missing values generated)
+
+. 
+. * Employment separation flow dummies
+. gen E_U = ( L.E == 1 & U == 1 ) if L.jtresp == 2 & L.jtyears < 99 & n == 1
+(23,837,735 missing values generated)
+
+. gen E_N = ( L.E == 1 & ( U == 1 | I == 1 ) ) if L.jtresp == 2 & L.jtyears < 99 & n == 1
+(23,837,735 missing values generated)
+
+. 
+. * EE dummy
+. gen E_E = ( L.E == 1 & E == 1 & empsame == 1 ) if L.jtresp == 2 & L.jtyears < 99 & empsame >= 1 & empsame 
+> <= 2 & n == 1
+(23,862,307 missing values generated)
+
+. 
+. * collapse by tenure
+. collapse (sum) E0 (sum) E0b (sum) E_U (sum) E_N (sum) E_E [w=ten_weights], by( date tenure )
+(analytic weights assumed)
+
+. 
+. * probabilities
+. gen eu = E_U / E0
+(12 missing values generated)
+
+. gen en = E_N / E0
+(12 missing values generated)
+
+. gen ee = E_E / E0b
+(14 missing values generated)
+
+. 
+. * cleanup
+. keep date tenure eu en ee
+
+. rename tenure0 tenure
+
+. 
+. **
+. **
+. 
+. * export to R folder
+. export delimited "$R_directory\Data\CPS_flows_tenure", replace
+file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted202
+> 3\Replication_files\R\Data\CPS_flows_tenure.csv saved
+
+. 
+end of do-file
+
+. 
+. 
+. ******
+. ******
+. 
+. * TRANSITION RATES  U DURATION
+. do 1d_unemployment_duration.do
+
+. * TRANSITION PROBABILITIES BY U DURATION
+. 
+. * data
+. use "$working_dir\Dta\CPS_data_2", clear
+
+. 
+. 
+. 
+. * tabulate distribution
+. tab durunemp if U == 1, miss
+
+ continuous |
+      weeks |
+ unemployed |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      2,873        0.30        0.30
+          1 |     63,997        6.75        7.06
+          2 |     76,223        8.04       15.10
+          3 |     57,321        6.05       21.15
+          4 |     84,225        8.89       30.03
+          5 |     15,871        1.67       31.71
+          6 |     34,046        3.59       35.30
+          7 |     22,840        2.41       37.71
+          8 |     64,763        6.83       44.55
+          9 |     23,120        2.44       46.99
+         10 |     16,888        1.78       48.77
+         11 |     12,335        1.30       50.07
+         12 |     45,543        4.81       54.87
+         13 |     21,567        2.28       57.15
+         14 |      9,024        0.95       58.10
+         15 |      8,141        0.86       58.96
+         16 |     26,871        2.84       61.80
+         17 |     17,858        1.88       63.68
+         18 |      5,743        0.61       64.29
+         19 |      3,736        0.39       64.68
+         20 |     10,142        1.07       65.75
+         21 |      8,723        0.92       66.67
+         22 |     20,912        2.21       68.88
+         23 |      1,820        0.19       69.07
+         24 |      4,311        0.45       69.53
+         25 |      4,724        0.50       70.02
+         26 |     33,653        3.55       73.58
+         27 |      2,744        0.29       73.86
+         28 |      1,681        0.18       74.04
+         29 |      2,675        0.28       74.32
+         30 |     18,781        1.98       76.31
+         31 |      4,807        0.51       76.81
+         32 |        717        0.08       76.89
+         33 |      1,414        0.15       77.04
+         34 |      6,033        0.64       77.67
+         35 |     14,923        1.57       79.25
+         36 |        623        0.07       79.32
+         37 |        657        0.07       79.38
+         38 |      2,448        0.26       79.64
+         39 |     11,272        1.19       80.83
+         40 |      1,851        0.20       81.03
+         41 |        252        0.03       81.05
+         42 |        898        0.09       81.15
+         43 |      9,123        0.96       82.11
+         44 |      2,195        0.23       82.34
+         45 |        155        0.02       82.36
+         46 |        538        0.06       82.42
+         47 |      2,767        0.29       82.71
+         48 |      6,424        0.68       83.39
+         49 |        195        0.02       83.41
+         50 |        460        0.05       83.46
+         51 |      1,131        0.12       83.57
+         52 |     39,597        4.18       87.75
+         53 |        723        0.08       87.83
+         54 |        210        0.02       87.85
+         55 |      1,772        0.19       88.04
+         56 |     12,468        1.32       89.35
+         57 |      4,855        0.51       89.87
+         58 |         82        0.01       89.87
+         59 |        899        0.09       89.97
+         60 |      4,345        0.46       90.43
+         61 |      6,592        0.70       91.12
+         62 |         99        0.01       91.13
+         63 |        467        0.05       91.18
+         64 |      1,655        0.17       91.36
+         65 |      4,730        0.50       91.86
+         66 |        629        0.07       91.92
+         67 |         62        0.01       91.93
+         68 |        238        0.03       91.96
+         69 |      1,924        0.20       92.16
+         70 |        538        0.06       92.22
+         71 |         17        0.00       92.22
+         72 |        136        0.01       92.23
+         73 |        642        0.07       92.30
+         74 |        915        0.10       92.40
+         75 |         49        0.01       92.40
+         76 |         71        0.01       92.41
+         77 |        249        0.03       92.43
+         78 |      4,241        0.45       92.88
+         79 |         94        0.01       92.89
+         80 |         53        0.01       92.90
+         81 |        260        0.03       92.92
+         82 |      1,598        0.17       93.09
+         83 |        646        0.07       93.16
+         84 |         14        0.00       93.16
+         85 |        130        0.01       93.18
+         86 |        604        0.06       93.24
+         87 |      1,057        0.11       93.35
+         88 |         11        0.00       93.35
+         89 |         72        0.01       93.36
+         90 |        270        0.03       93.39
+         91 |        706        0.07       93.46
+         92 |        133        0.01       93.48
+         93 |         15        0.00       93.48
+         94 |         40        0.00       93.48
+         95 |        270        0.03       93.51
+         96 |         83        0.01       93.52
+         97 |          2        0.00       93.52
+         98 |         14        0.00       93.52
+         99 |        172        0.02       93.54
+        100 |        185        0.02       93.56
+        101 |          1        0.00       93.56
+        102 |         19        0.00       93.56
+        103 |         50        0.01       93.57
+        104 |     24,434        2.58       96.15
+        105 |         12        0.00       96.15
+        106 |         12        0.00       96.15
+        107 |        936        0.10       96.25
+        108 |      6,910        0.73       96.98
+        109 |      2,986        0.32       97.29
+        110 |          1        0.00       97.29
+        111 |        546        0.06       97.35
+        112 |      2,596        0.27       97.62
+        113 |      2,955        0.31       97.93
+        114 |          2        0.00       97.94
+        115 |        304        0.03       97.97
+        116 |        985        0.10       98.07
+        117 |      1,983        0.21       98.28
+        118 |        262        0.03       98.31
+        119 |     16,024        1.69      100.00
+        120 |          6        0.00      100.00
+        121 |          1        0.00      100.00
+        124 |          4        0.00      100.00
+------------+-----------------------------------
+      Total |    947,697      100.00
+
+. 
+. * gen lag unemployment duration in months
+. gen duration0 = floor( L.durunemp/(52/12) ) if L.U == 1 & L.durunem < 999
+(23,624,590 missing values generated)
+
+. tab duration0 if L.U == 1, miss
+
+  duration0 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    200,442       30.23       30.23
+          1 |     96,740       14.59       44.83
+          2 |     68,847       10.38       55.21
+          3 |     55,940        8.44       63.65
+          4 |     17,832        2.69       66.34
+          5 |     21,324        3.22       69.55
+          6 |     43,379        6.54       76.10
+          7 |      8,942        1.35       77.45
+          8 |     12,647        1.91       79.35
+          9 |     16,102        2.43       81.78
+         10 |      3,919        0.59       82.37
+         11 |      5,523        0.83       83.21
+         12 |     41,342        6.24       89.44
+         13 |      7,510        1.13       90.58
+         14 |      5,159        0.78       91.35
+         15 |      3,653        0.55       91.91
+         16 |        984        0.15       92.05
+         17 |        779        0.12       92.17
+         18 |      4,695        0.71       92.88
+         19 |      1,072        0.16       93.04
+         20 |        879        0.13       93.17
+         21 |        511        0.08       93.25
+         22 |        198        0.03       93.28
+         23 |        168        0.03       93.31
+         24 |     25,506        3.85       97.15
+         25 |      4,740        0.71       97.87
+         26 |      2,327        0.35       98.22
+         27 |     11,804        1.78      100.00
+         28 |          4        0.00      100.00
+------------+-----------------------------------
+      Total |    662,968      100.00
+
+. 
+. * dummy for lagged state
+. gen U0 = L.U if n == 1 & duration0 != .
+(23,630,550 missing values generated)
+
+. 
+. * dummy for transition using longitudinal cpsidp linkage and the number of weeks in unemployment
+. gen U_E = ( L.U == 1 & ( E == 1 | ( U == 1 & durunemp < 4 ) ) ) if n == 1 & duration0 != .
+(23,630,550 missing values generated)
+
+. 
+. * collapse by unemployment duration
+. collapse (sum) U0 (sum) U_E [w=panelweight], by( date year month duration )
+(analytic weights assumed)
+
+. 
+. * probabilities
+. gen ue = U_E / U0
+(279 missing values generated)
+
+. 
+. * cleanup
+. rename duration0 duration
+
+. keep date year month duration ue
+
+. keep if duration != .
+(279 observations deleted)
+
+. keep if duration < 25
+(480 observations deleted)
+
+. order date month duration
+
+. 
+. 
+. 
+. ** RMA seasonal adjustment
+. xtset duration date
+       panel variable:  duration (unbalanced)
+        time variable:  date, 1995m10 to 2018m12, but with gaps
+                delta:  1 month
+
+. 
+. * 13-month centered moving average
+. tssmooth ma moving_average = ue, window(6 1 6) 
+The smoother applied was
+     by duration : (1/13)*[x(t-6) + x(t-5) + x(t-4) + x(t-3) + x(t-2) + x(t-1) + 1*x(t) + x(t+1) +
+     x(t+2) + x(t+3) + x(t+4) + x(t+5) + ...; x(t)= ue
+
+. 
+. * actual-to-smoothed ratio
+. gen ma_ratio = ue / moving_average
+(192 missing values generated)
+
+. 
+. * compute calendar-month average (by u-duration)
+. egen month_average = mean( ma_ratio ), by( month duration )
+
+. 
+. * center the ratio index around one (normalize)
+. egen index_average = mean( month_average ), by( duration )
+
+. gen month_average_centered = month_average + ( 1 - index_average )
+
+. 
+. * compute the seasonnaly adjusted series
+. gen ue_sa = ue / month_average_centered
+
+. 
+. * cleanup
+. drop moving_average ma_ratio month_average index_average month_average_centered
+
+. 
+. drop ue
+
+. rename ue_sa ue
+
+. 
+. 
+. ********
+. ********
+. 
+. 
+. * Quarterly averages
+. 
+. * quarter
+. gen quarter = ceil(month/3)
+
+. 
+. * time variables
+. gen year_str = string(year)
+
+. gen quarter_str = string(quarter)
+
+. gen date_str = year_str + "q" + quarter_str
+
+. gen date_ = quarterly( date_str, "YQ" )
+
+. drop date *_str
+
+. rename date_ date
+
+. 
+. * collapse to get unweighted quarterly averages by duration groups
+. collapse ue, by( date year quarter duration )
+
+. order date year quarter duration
+
+. sort date year quarter duration
+
+. 
+. xtset duration date, quarterly
+       panel variable:  duration (unbalanced)
+        time variable:  date, 1995q4 to 2018q4, but with gaps
+                delta:  1 quarter
+
+. 
+. * export to R folder
+. export delimited "$R_directory\Data\CPS_flows_uduration", replace
+file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Accepted202
+> 3\Replication_files\R\Data\CPS_flows_uduration.csv saved
+
+. 
+end of do-file
+
+. 
+. ******
+. ******
+. 
+. * erase dta file used in worker flows analysis
+. erase CPS_data_2.dta
+file CPS_data_2.dta not found
+r(601);
+
+end of do-file
+r(601);
+
+end of do-file
+
+r(601);
+
+. do "C:\Users\jcrechet\AppData\Local\Temp\STD5c64_000000.tmp"
+
+. * erase dta file used in worker flows analysis
+. erase "$working_dir\Dta\CPS_data_2.da"
+file C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April
+    2022\Accepted2023\Replication_files\Stata\Dta\CPS_data_2.da not found
+r(601);
+
+end of do-file
+
+r(601);
+
+. do "C:\Users\jcrechet\AppData\Local\Temp\STD5c64_000000.tmp"
+
+. * erase dta file used in worker flows analysis
+. erase "$working_dir\Dta\CPS_data_2.dta"
+
+. 
+. ******
+. ******
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\jcrechet\Dropbox\Research\Projects\Heterogeneity_Uflows\Submissions\EER-April 2022\Acc
+> epted2023\Replication_files\Stata\Log\1_worker_flows.log
+  log type:  text
+ closed on:  19 Mar 2023, 11:20:59
+------------------------------------------------------------------------------------------------------------
